@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style> /* set the CSS */
+
+.line {
+  fill: none;
+  stroke: #113CCF;
+  stroke-width: 3px;
+}
+
+a {
+  text-decoration: none;
+  display: inline-block;
+  padding: 8px 16px;
+}
+
+a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.previous {
+  background-color: #f1f1f1;
+  color: black;
+}
+
+.next {
+  background-color: #6c7a89;
+  color: white;
+}
+
+.round {
+  border-radius: 50%;
+}
+
+</style>
+<body>
+
+<!-- load the d3.js library -->    	
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+
+<center><h1>Netflix vs Disney+</h1></center>
+<hr>
+<center><h1>Netflix's Rapid Release Schedule</h1></center>
+
+<p>
+  Netflix has shown exponential growth in their ability to produce content while Disney looks linear and almost flat by comparison. That being said, audiences may prefer the quality of films associated with the Disney brand much more than what Netflix has been producing. Disney also seems willing and capable to ramp up production - an uptrend is barely visible in the chart within the past 2 years.
+</p>
+<p>
+  It also helps to understand the shifting business model of the two companies. Previously, Disney had no incentive to produce movies at a faster pace as there are only so many physical theater screens across the world and a movie typically stays in theaters for at least a month. With the new streaming market, there are no physical constraints which means producing content faster now makes sense.
+</p>
+
+<center>
+<a href="/full_hist.html" class="previous">&#8249; Previous</a>
+<a href="/explore.html" class="next">Next &#8250;</a>
+</center>
+
+<script>
+
+// set the dimensions and margins of the graph
+var margin = {top: 20, right: 20, bottom: 50, left: 70},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// parse the date / time
+var parseTime = d3.timeParse("%m/%d/%Y");
+
+// set the ranges
+var x = d3.scaleTime().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
+
+// define the line
+var valueline = d3.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.total); });
+
+// append the svg obgect to the body of the page
+// appends a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")")
+    .attr("id", "plotarea");
+
+// Get the data
+d3.csv("netflixdisney.csv").then(function(data) {
+
+  // format the data
+  data.forEach(function(d) {
+      d.date = parseTime(d.date);
+      d.total = +d.total;
+  });
+
+  // Scale the range of the data
+  x.domain([parseTime("01/01/2015"), parseTime("12/01/2021")]);
+  y.domain([0, d3.max(data, function(d) { return d.total; })]);
+
+
+
+  var disFilter = data.filter(function(d){return d.network=="Disney" && (d.date > parseTime("12/01/2014"))})
+  var netFilter = data.filter(function(d){return d.network=="Netflix" && (d.date > parseTime("12/01/2014"))})
+
+svg.append('g')
+      .append("path")
+        .datum(netFilter)
+        .attr("d", d3.line()
+          .x(function(d) { return x(d.date) })
+          .y(function(d) { return y(+d.total) })
+        )
+        .attr("class", "line")
+        .style("stroke", "red");
+
+svg.append('g')
+      .append("path")
+        .datum(disFilter)
+        .attr("d", d3.line()
+          .x(function(d) { return x(d.date) })
+          .y(function(d) { return y(+d.total) })
+        )
+        .attr("class", "line");
+
+  // Add the x Axis
+  svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x))
+      .style("font-size","14px");
+
+  // Add the y Axis
+  svg.append("g")
+      .call(d3.axisLeft(y))
+      .style("font-size","12px");
+});
+
+// add labels
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 10)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "30px") 
+        .text("Netflix vs Disney Feature Films (2015 - Current)");
+
+svg.append("text")
+.attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("font-size", "20px") 
+      .style("text-anchor", "middle")
+    .text("Released Feature Films");
+
+    const annotations = [
+              {
+                note: {
+                  label: "Disney announces the Disney+ streaming service, set to launch in late 2019.",
+                  title: "November 8, 2018"
+                },
+                type: d3.annotationCalloutCircle,
+                subject: {
+                  radius: 10,         // circle radius
+                  radiusPadding: 0   // white space around circle befor connector
+                },
+                color: ["#000"],
+                x: 560,
+                y: 143,
+                dy: 20,
+                dx: -100
+              },
+              {
+                note: {
+                  label: "Disney+ launches in the US. Film releases start to increase more rapidly",
+                  title: "November 12, 2019"
+                },
+                type: d3.annotationCalloutCircle,
+                subject: {
+                  radius: 10,         // circle radius
+                  radiusPadding: 0   // white space around circle befor connector
+                },
+                color: ["#000"],
+                x: 680,
+                y: 138,
+                dy: 80,
+                dx: 50
+              }
+            ]
+
+            // Add annotation to the chart
+            const makeAnnotations = d3.annotation()
+              .annotations(annotations)
+
+            d3.select("svg")
+              .append("g")
+              .call(makeAnnotations)        
+
+//legend
+svg.append("circle").attr("cx",50).attr("cy",390).attr("r", 6).style("fill", "red");
+svg.append("circle").attr("cx",50).attr("cy",360).attr("r", 6).style("fill", "#113CCF");
+svg.append("text").attr("x", 70).attr("y", 390).text("Netflix").style("font-size", "15px").style("font-weight", "bold").attr("alignment-baseline","middle");
+svg.append("text").attr("x", 70).attr("y", 360).text("Disney").style("font-size", "15px").style("font-weight", "bold").attr("alignment-baseline","middle");
+
+</script>
+</body>
